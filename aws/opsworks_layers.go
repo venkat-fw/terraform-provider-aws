@@ -364,16 +364,18 @@ func (lt *opsworksLayerType) Create(d *schema.ResourceData, client *opsworks.Ops
 
 	log.Printf("[DEBUG] Creating OpsWorks layer: %s", d.Id())
 
-	ecsCluster := aws.String(d.Get("ecs_cluster_arn").(string))
-	if ecsCluster != nil && *ecsCluster != "" {
-		//Need to attach the ECS Cluster to the stack before creating the layer
-		log.Printf("[DEBUG] Attaching ECS Cluster: %s", *ecsCluster)
-		_, err := client.RegisterEcsCluster(&opsworks.RegisterEcsClusterInput{
-			EcsClusterArn: ecsCluster,
-			StackId:       req.StackId,
-		})
-		if err != nil {
-			return err
+	if lt.TypeName == "ecs-cluster" {
+		ecsCluster := aws.String(d.Get("ecs_cluster_arn").(string))
+		if ecsCluster != nil && *ecsCluster != "" {
+			//Need to attach the ECS Cluster to the stack before creating the layer
+			log.Printf("[DEBUG] Attaching ECS Cluster: %s", *ecsCluster)
+			_, err := client.RegisterEcsCluster(&opsworks.RegisterEcsClusterInput{
+				EcsClusterArn: ecsCluster,
+				StackId:       req.StackId,
+			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -505,15 +507,16 @@ func (lt *opsworksLayerType) Delete(d *schema.ResourceData, client *opsworks.Ops
 	if err != nil {
 		return err
 	}
-
-	ecsCluster := aws.String(d.Get("ecs_cluster_arn").(string))
-	if ecsCluster != nil && *ecsCluster != "" {
-		log.Printf("[DEBUG] Attaching ECS Cluster: %s", *ecsCluster)
-		_, err := client.DeregisterEcsCluster(&opsworks.DeregisterEcsClusterInput{
-			EcsClusterArn: ecsCluster,
-		})
-		if err != nil {
-			return err
+	if lt.TypeName == "ecs-cluster" {
+		ecsCluster := aws.String(d.Get("ecs_cluster_arn").(string))
+		if ecsCluster != nil && *ecsCluster != "" {
+			log.Printf("[DEBUG] Attaching ECS Cluster: %s", *ecsCluster)
+			_, err := client.DeregisterEcsCluster(&opsworks.DeregisterEcsClusterInput{
+				EcsClusterArn: ecsCluster,
+			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
